@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A minimal, causally aligned implementation of Wan-Streamer for joint text, audio, and video prediction on real AMI meeting data.">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:title" content="Wan-Streamer Minimal Implementation">
+  <meta property="og:description" content="Causal multimodal learning for text, audio, and video interaction on real meeting data.">
+  <meta property="og:image" content="assets/media/s3-1-comparison-poster.jpg">
+  <title>Wan-Streamer Minimal Implementation</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="nav-shell">
+      <a class="wordmark" href="#top" aria-label="Wan-Streamer Minimal home">
+        <span class="wordmark-mark">WS</span>
+        <span>Minimal</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+      <nav id="site-nav" aria-label="Primary navigation">
+        <a href="#overview">Overview</a>
+        <a href="#data">Data</a>
+        <a href="#method">Method</a>
+        <a href="#results">Mechanism</a>
+        <a href="#rollout">Rollout</a>
+        <a href="#limitations">Limitations</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="intro section-shell">
+      <div class="intro-copy">
+        <div class="eyebrow">Research prototype · Work in progress</div>
+        <h1>Wan-Streamer Minimal Implementation</h1>
+        <p class="intro-deck">A causally aligned, three-modal training pipeline for predicting the next text, audio, and video states from real multi-party meeting streams.</p>
+        <div class="intro-actions">
+          <a class="button primary" href="assets/docs/progress-report.pdf">Read progress report</a>
+          <a class="button" href="#rollout">Inspect the rollout</a>
+        </div>
+        <p class="notice"><strong>Preliminary results.</strong> This is an ongoing research project; the results reported here are preliminary and validation-only. The holdout set has not been touched, and no claim is made about full-scale generation quality.</p>
+      </div>
+
+      <div class="intro-visual" aria-label="Causal multimodal system overview">
+        <div class="visual-header">
+          <span>160 ms causal unit</span>
+          <span class="right">aligned-boundary-v1</span>
+        </div>
+        <div class="stream-stack inputs">
+          <div class="stream text-stream"><span>Text</span><strong>Causal history</strong></div>
+          <div class="stream audio-stream"><span>Audio</span><strong>Mimi codes</strong></div>
+          <div class="stream video-stream"><span>Scene</span><strong>Wan latents</strong></div>
+        </div>
+        <div class="flow-arrow"><span></span><small>past &amp; visible now</small></div>
+        <div class="fusion-card">
+          <small>Shared causal fusion</small>
+          <strong>128-D state</strong>
+          <div class="fusion-grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="flow-arrow down"><span></span><small>predict &amp; feed back</small></div>
+        <div class="output-row">
+          <div><b>t<sub>k</sub></b><span>token</span></div>
+          <div><b>a<sub>k</sub></b><span>audio</span></div>
+          <div><b>z<sub>k+1</sub></b><span>video</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="fact-strip section-shell" aria-label="Project facts">
+      <div class="fact-grid">
+        <div><strong>7.51 h</strong><span>unique meeting time</span></div>
+        <div><strong>2,404</strong><span>role-view episodes</span></div>
+        <div><strong>5.67 M</strong><span>trainable parameters</span></div>
+        <div><strong>3 seeds</strong><span>validation repeats</span></div>
+        <div><strong>0</strong><span>holdout accesses</span></div>
+      </div>
+    </section>
+
+    <section id="overview" class="section section-shell">
+      <div class="section-heading narrow">
+        <div class="eyebrow">01 · Overview</div>
+        <h2>Reproducing the mechanism before scaling the model.</h2>
+        <p>The original system targets unified, low-latency text, audio, and video generation. Here, public components and a compact shared predictor are used to test the core causal contract under limited data and compute.</p>
+      </div>
+
+      <div class="principle-grid">
+        <article class="principle-card">
+          <span class="card-index">A</span>
+          <h3>Real multimodal states</h3>
+          <p>Raw AMI audio and video are represented with Kyutai Mimi and Wan2.1 Wan-VAE rather than placeholders.</p>
+        </article>
+        <article class="principle-card">
+          <span class="card-index">B</span>
+          <h3>Strict causal boundaries</h3>
+          <p>Only already-visible user inputs and generated agent history can enter the current prediction.</p>
+        </article>
+        <article class="principle-card">
+          <span class="card-index">C</span>
+          <h3>One shared training path</h3>
+          <p>Text, audio, and video losses all send finite, non-zero gradients into the same fusion state.</p>
+        </article>
+        <article class="principle-card">
+          <span class="card-index">D</span>
+          <h3>Honest closed-loop tests</h3>
+          <p>Predictions are fed back without future targets. Stable interfaces and failed capabilities are reported separately.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="data" class="section section-shell">
+      <div class="section-heading">
+        <div class="eyebrow">02 · Causal meeting data</div>
+        <h2>One meeting, four focal-agent views.</h2>
+        <p>AMI provides synchronized headset audio, close-up video, room-view video, speaker identity, and word timing. Each participant is alternately treated as the agent while the other participants form the user side.</p>
+      </div>
+
+      <div class="data-layout">
+        <figure class="media-frame">
+          <img src="assets/media/ami-four-stream-sample.jpg" alt="AMI sample showing an agent close-up, a shared Corner view, agent audio waveform, and mixed user audio waveform" loading="lazy">
+          <figcaption>
+            <strong>A real 45-second AMI role-view sample.</strong>
+            Agent close-up, Corner shared scene, isolated agent microphone, and a mix of the other participants' microphones.
+          </figcaption>
+        </figure>
+
+        <div class="data-stats">
+          <div class="split-card train">
+            <span>Train</span>
+            <strong>12 meetings</strong>
+            <p>1,856 role views · 5.8000 unique hours</p>
+          </div>
+          <div class="split-card val">
+            <span>Validation</span>
+            <strong>4 meetings</strong>
+            <p>548 role views · 1.7125 unique hours</p>
+          </div>
+          <div class="split-card holdout">
+            <span>Future holdout</span>
+            <strong>4 IDs locked</strong>
+            <p>ES2014a–d signals remain unread</p>
+          </div>
+          <div class="split-note">
+            <span class="check">✓</span>
+            <p>Train and validation share neither meetings nor participants. Corner video is a <strong>shared scene</strong>, not a user-only camera.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline" aria-label="160 millisecond causal unit mapping">
+        <div class="timeline-title"><span>Every 160 ms</span><small>aligned on one causal clock</small></div>
+        <div class="timeline-tracks">
+          <div class="track"><span>Text</span><i class="token long"></i><i class="token"></i><i class="token short"></i><i class="token long"></i></div>
+          <div class="track"><span>Audio</span><i></i><i></i><i></i><i></i><small>2 Mimi steps / unit</small></div>
+          <div class="track"><span>Video</span><i></i><i></i><i></i><i></i><small>z<sub>k</sub> → z<sub>k+1</sub></small></div>
+        </div>
+      </div>
+
+      <p class="attribution">AMI media excerpt © AMI Consortium, presented with attribution under the corpus license; cropped and arranged for this research demonstration. <a href="https://groups.inf.ed.ac.uk/ami/corpus/" rel="noreferrer">Corpus source</a> · <a href="https://creativecommons.org/licenses/by/4.0/" rel="noreferrer">CC BY 4.0</a></p>
+    </section>
+
+    <section id="method" class="section section-shell">
+      <div class="section-heading">
+        <div class="eyebrow">03 · Minimal architecture</div>
+        <h2>A shared causal state, three prediction heads.</h2>
+        <p>The implementation deliberately avoids reconstructing the undisclosed full-scale configuration. It asks a narrower question: can real text, codec, and VAE states share one valid next-state training path?</p>
+      </div>
+
+      <div class="architecture" role="img" aria-label="Architecture diagram showing causal inputs entering a shared fusion state and branching into text, audio, and video heads">
+        <div class="architecture-column input-column">
+          <div class="arch-label">Causal inputs</div>
+          <div class="arch-node text"><strong>SmolLM2-360M</strong><span>visible text + generated ledger</span></div>
+          <div class="arch-node audio"><strong>User &amp; previous agent audio</strong><span>8-codebook Mimi states</span></div>
+          <div class="arch-node video"><strong>Shared scene &amp; previous agent video</strong><span>Wan-VAE boundary states</span></div>
+          <div class="arch-node planner"><strong>External planner</strong><span>START / CONTINUE / END</span></div>
+        </div>
+        <div class="architecture-link"><span></span><span></span><span></span><span></span></div>
+        <div class="architecture-column fusion-column">
+          <div class="arch-label">Joint representation</div>
+          <div class="arch-node fusion">
+            <small>5.67M trainable parameters</small>
+            <strong>Shared causal fusion</strong>
+            <span>128-dimensional state</span>
+          </div>
+          <div class="gradient-note">text ∇ &nbsp; audio ∇ &nbsp; video ∇</div>
+        </div>
+        <div class="architecture-link output-link"><span></span><span></span><span></span></div>
+        <div class="architecture-column output-column">
+          <div class="arch-label">Next states</div>
+          <div class="arch-node text"><strong>Text head</strong><span>next lexical token</span></div>
+          <div class="arch-node audio"><strong>Audio heads</strong><span>16 categorical codes</span></div>
+          <div class="arch-node video"><strong>Video head</strong><span>next boundary residual</span></div>
+        </div>
+      </div>
+
+      <div class="contract-callout">
+        <div>
+          <span class="eyebrow">Training</span>
+          <p>True previous states → current targets</p>
+        </div>
+        <div class="contract-divider">→</div>
+        <div>
+          <span class="eyebrow">Rollout</span>
+          <p>Predicted states → the next model call</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="section section-shell">
+      <div class="section-heading">
+        <div class="eyebrow">04 · Mechanism check</div>
+        <h2>A causal training contract holds across text, audio, and video — with modest gains.</h2>
+        <p>Means over seeds 7, 17, and 29 on AMI-medium validation. These numbers are diagnostic: they show that a shared causal training contract is learnable, not that generation quality is achieved. Read each row below as a claim about what the model uses — and what it does not yet do.</p>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-block">
+          <h3>Text next-token prediction (NTP)</h3>
+          <table class="cmp-table">
+            <thead><tr><th>Condition</th><th class="num">CE ↓</th></tr></thead>
+            <tbody>
+              <tr class="best"><td>Correct causal context</td><td class="num">2.93</td></tr>
+              <tr class="muted"><td>Null user/history (baseline)</td><td class="num">4.89</td></tr>
+              <tr class="muted"><td>Shuffled context (baseline)</td><td class="num">6.31</td></tr>
+            </tbody>
+          </table>
+          <p>Correct causal context wins in all three text-backbone seeds. The gain is attributable to the combined context, not user semantics alone.</p>
+          <div class="verdict">
+            <p><strong>Shows:</strong> the text head uses its causal context — removing it (4.89) or shuffling it (6.31) roughly doubles CE.</p>
+            <p><strong>Does not show:</strong> user-driven understanding. CE 2.93 (perplexity ≈ 18.6) is about context use, not semantics of the user stream.</p>
+          </div>
+        </div>
+
+        <div class="result-block">
+          <h3>Audio next-state prediction</h3>
+          <table class="cmp-table">
+            <thead><tr><th>Condition</th><th class="num">Top-1 acc ↑</th></tr></thead>
+            <tbody>
+              <tr class="best"><td>Model</td><td class="num">15.99%</td></tr>
+              <tr class="muted"><td>Copy previous codes (baseline)</td><td class="num">14.58%</td></tr>
+            </tbody>
+          </table>
+          <p>All three seeds beat copying the previous Mimi codes. User-audio sensitivity remains inconsistent.</p>
+          <div class="verdict">
+            <p><strong>Shows:</strong> a small but reproducible gain over the copy baseline (+1.4 pts, in all three seeds).</p>
+            <p><strong>Does not show:</strong> learned audio generation — 16% top-1 sits close to copying, and user-audio sensitivity stays inconsistent.</p>
+          </div>
+        </div>
+
+        <div class="result-block">
+          <h3>Video next-state prediction</h3>
+          <table class="cmp-table">
+            <thead><tr><th>Condition</th><th class="num">MSE ↓</th></tr></thead>
+            <tbody>
+              <tr class="best"><td>Model</td><td class="num">0.0087</td></tr>
+              <tr class="muted"><td>Copy previous state (baseline)</td><td class="num">0.0111</td></tr>
+            </tbody>
+          </table>
+          <p>About 21% lower latent-space error than copy. Shared-scene removal or shuffling hurts all three seeds.</p>
+          <div class="verdict">
+            <p><strong>Shows:</strong> the video head uses the shared scene — corrupting it hurts all three seeds.</p>
+            <p><strong>Does not show:</strong> motion prediction — the absolute error is tiny (≈ 45 dB PSNR), close to copying the previous frame.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-summary">
+        <p><strong>How to read this section:</strong> the numbers above support a causal training contract — gradients from text, audio, and video all flow through one shared representation, and each head beats its copy or shuffle baseline. They deliberately do not claim generation quality; that is the question the next section stress-tests.</p>
+      </div>
+
+      <div class="seed-table-wrap">
+        <div class="table-heading">
+          <div><span class="eyebrow">Reproducibility</span><h3>Three frozen training seeds</h3></div>
+          <span class="table-note">Best checkpoint: epoch 2 for every seed</span>
+        </div>
+        <div class="table-scroll">
+          <table class="seed-table">
+            <thead><tr><th>Seed</th><th>Text CE ↓</th><th>Audio top-1 ↑</th><th>Video MSE ↓</th><th>Checkpoint reload</th></tr></thead>
+            <tbody>
+              <tr><td>7</td><td>2.93485</td><td>16.188%</td><td>0.008594</td><td>0 error</td></tr>
+              <tr><td>17</td><td>2.93456</td><td>15.922%</td><td>0.008535</td><td>0 error</td></tr>
+              <tr><td>29</td><td>2.93481</td><td>15.847%</td><td>0.009047</td><td>0 error</td></tr>
+              <tr class="mean"><td>Mean</td><td>2.93474</td><td>15.986%</td><td>0.008725</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="rollout" class="section section-shell">
+      <div class="section-heading">
+        <div class="eyebrow">05 · Closed-loop stress test</div>
+        <h2>The feedback mechanism works. Generation quality does not yet hold.</h2>
+        <p>Where the previous section checked the training contract, this one asks what happens when the model generates from its own predictions — the honest test. A frozen model, no retraining: six annotation-selected validation segments at 4, 8, 16, and 32 units. The media below is the preselected speech-start segment at 16 units (2.56 seconds), seed 7.</p>
+      </div>
+
+      <div class="status-summary">
+        <p><strong>Feedback contract:</strong> predicted text, audio, and video re-enter the model from the second unit. <strong>Text loop:</strong> numerically stable, but repetitive and low-accuracy. <strong>Audio loop:</strong> collapsed — full-loop decode is 21.42 dB below target RMS. <strong>Video loop:</strong> stable at 2.56 s; degrades by 5.12 s.</p>
+      </div>
+
+      <article class="demo-block">
+        <div class="demo-heading">
+          <div><span class="eyebrow">Video diagnostic</span><h3>Six inference contracts, one frozen segment</h3></div>
+          <span class="demo-meta">64 frames · 25 FPS · 2.56 s</span>
+        </div>
+        <div class="video-shell">
+          <video controls playsinline preload="metadata" poster="assets/media/s3-1-comparison-poster.jpg">
+            <source src="assets/media/s3-1-comparison-video-labeled.webm" type="video/webm">
+            <source src="assets/media/s3-1-comparison-video-labeled.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+          </video>
+        </div>
+        <div class="observation">
+          <span>How to read it</span>
+          <p>The top row remains close because it receives true previous video states. In the lower row, self-predicted media is fed back; face and microphone artifacts become visible late in the clip. Persistent copy can look deceptively plausible because the source motion is small.</p>
+        </div>
+      </article>
+
+      <article class="demo-block">
+        <div class="demo-heading">
+          <div><span class="eyebrow">Audio diagnostic</span><h3>Listen to feedback accumulation</h3></div>
+          <span class="demo-meta">Mimi decode · 24 kHz · 2.56 s each</span>
+        </div>
+        <div class="audio-grid">
+          <div class="audio-item target"><div><span>Reference</span><strong>Target</strong><b>0.00 dB</b></div><audio controls preload="none" src="assets/media/audio-target.wav"></audio></div>
+          <div class="audio-item"><div><span>True previous media</span><strong>One-step</strong><b>−4.37 dB</b></div><audio controls preload="none" src="assets/media/audio-one-step.wav"></audio></div>
+          <div class="audio-item"><div><span>Predicted text only</span><strong>Text loop</strong><b>−2.79 dB</b></div><audio controls preload="none" src="assets/media/audio-text-loop.wav"></audio></div>
+          <div class="audio-item"><div><span>Predicted media</span><strong>Media loop</strong><b>−21.43 dB</b></div><audio controls preload="none" src="assets/media/audio-media-loop.wav"></audio></div>
+          <div class="audio-item"><div><span>All predictions fed back</span><strong>Full loop</strong><b>−21.42 dB</b></div><audio controls preload="none" src="assets/media/audio-full-loop.wav"></audio></div>
+          <div class="audio-item"><div><span>Fixed start codes</span><strong>Persistent copy</strong><b>−21.52 dB</b></div><audio controls preload="none" src="assets/media/audio-persistent-copy.wav"></audio></div>
+        </div>
+        <p class="demo-footnote">dB values are RMS relative to the target on this frozen representative segment. They measure energy collapse, not perceptual quality. Only one player is allowed to play at a time.</p>
+      </article>
+
+      <article class="demo-block">
+        <div class="demo-heading">
+          <div><span class="eyebrow">Text diagnostic</span><h3>Generated history is causally fed back</h3></div>
+          <span class="demo-meta">Seed 7 · 16-unit speech-start segment</span>
+        </div>
+        <div class="transcript-grid">
+          <div>
+            <span class="transcript-mode">One-step · true previous history</span>
+            <p>“Mm-hmm.” → “like, yeah, okay.” → “we're gonna have to do something” → “Okay, so we've got our…”</p>
+            <small>Content-token accuracy: 21.15%</small>
+          </div>
+          <div>
+            <span class="transcript-mode">Text loop · predicted history</span>
+            <p>“Mm-hmm.” → “Yeah, okay. Um, yeah,” → “that's a good idea.” → “Yeah, that's a good idea.”</p>
+            <small>Content-token accuracy: 7.69%</small>
+          </div>
+          <div>
+            <span class="transcript-mode">Full loop · all predicted states</span>
+            <p>“Mm-hmm.” → “I'm gonna say, yeah, I” → “think I'm gonna say, yeah,” → “I'm gonna say, yeah, I…”</p>
+            <small>Content-token accuracy: 5.77%</small>
+          </div>
+        </div>
+        <p class="demo-footnote">The rollout proves state feedback and target isolation. Repetition shows that it does not yet demonstrate natural free dialogue.</p>
+      </article>
+    </section>
+
+    <section id="audit" class="section section-shell">
+      <div class="section-heading">
+        <div class="eyebrow">06 · Foundation audit</div>
+        <h2>Failures in the contract were fixed before capability claims.</h2>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-item"><span>01</span><div><h3>Video boundary repaired</h3><p>The aligned contract predicts <code>z<sub>k</sub> → z<sub>k+1</sub></code>, not an earlier latent mislabeled as the current unit.</p></div></div>
+        <div class="audit-item"><span>02</span><div><h3>Terminal target masked</h3><p>The last unit cannot supervise a future video state that does not exist.</p></div></div>
+        <div class="audit-item"><span>03</span><div><h3>Future history removed</h3><p>Rollout cannot re-read ground-truth agent events that occur after its start.</p></div></div>
+        <div class="audit-item"><span>04</span><div><h3>Codec causality checked</h3><p>Mimi codes and Wan latents match raw-prefix recomputation in 18/18 checks each.</p></div></div>
+        <div class="audit-item"><span>05</span><div><h3>Split isolation retained</h3><p>Train and validation meetings and participants are disjoint; future holdout signals remain unread.</p></div></div>
+        <div class="audit-item"><span>06</span><div><h3>Feedback instrumented</h3><p>Tensor hashes and target mutation tests verify feedback without future-target dependence.</p></div></div>
+      </div>
+    </section>
+
+    <section id="limitations" class="section section-shell">
+      <div class="section-heading">
+        <div class="eyebrow">07 · Scope &amp; next step</div>
+        <h2>What is demonstrated — and what is not.</h2>
+      </div>
+      <div class="claims-grid">
+        <div class="claim-column yes">
+          <h3><span>✓</span> Supported by evidence</h3>
+          <ul>
+            <li>Real AMI media can be mapped to one causal 160 ms timeline.</li>
+            <li>Text, audio, and video share one trainable fusion state.</li>
+            <li>Local audio and video prediction beat frozen copy baselines.</li>
+            <li>Shared-scene video contributes to video prediction.</li>
+            <li>Predicted multimodal states are truly fed back in rollout.</li>
+          </ul>
+        </div>
+        <div class="claim-column no">
+          <h3><span>×</span> Not yet demonstrated</h3>
+          <ul>
+            <li>Autonomous START / CONTINUE / END planning.</li>
+            <li>Stable semantic gains from user text or user audio.</li>
+            <li>User-only visual understanding from the Corner camera.</li>
+            <li>Natural free dialogue or high-fidelity long generation.</li>
+            <li>Audio-stable full closed-loop interaction.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="next-step">
+        <div>
+          <span class="eyebrow">Next bounded experiment</span>
+          <h3>Diagnose the audio feedback attractor before touching holdout.</h3>
+          <p>Separate categorical-code recurrence from decoder-state effects, identify when silence becomes self-reinforcing, and apply at most one evidence-driven minimal repair on train/validation.</p>
+        </div>
+        <div class="route" aria-label="Next research route">
+          <span class="done">S3 unified training</span>
+          <i></i>
+          <span class="done">S3.1 diagnosis</span>
+          <i></i>
+          <span class="current">Audio-loop repair</span>
+          <i></i>
+          <span>Fresh holdout</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="resources" class="section section-shell">
+      <div class="resource-grid">
+        <div class="resource-copy">
+          <div class="eyebrow">Resources</div>
+          <h2>Report, references, and attribution.</h2>
+          <p>This page is a living record of a research prototype. The August 2026 report predates the S3.1 closed-loop diagnosis; the latest findings on this page supersede its “next step” paragraph.</p>
+          <a class="button" href="assets/docs/progress-report.pdf">Download report · PDF</a>
+        </div>
+        <div class="reference-list">
+          <a href="https://arxiv.org/abs/2607.15038" rel="noreferrer"><span>Wan-Streamer v0.3</span><small>Video = World + Event Stream</small></a>
+          <a href="https://arxiv.org/abs/2606.25041" rel="noreferrer"><span>Wan-Streamer v0.1</span><small>End-to-end real-time interactive foundation models</small></a>
+          <a href="https://groups.inf.ed.ac.uk/ami/corpus/" rel="noreferrer"><span>AMI Meeting Corpus</span><small>Real multi-party meeting media and annotations</small></a>
+          <a href="https://github.com/kyutai-labs/moshi" rel="noreferrer"><span>Kyutai Mimi / Moshi</span><small>Streaming audio codec representation</small></a>
+          <a href="https://github.com/Wan-Video/Wan2.1" rel="noreferrer"><span>Wan2.1</span><small>Causal video VAE representation</small></a>
+          <a href="notices.html"><span>Third-party notices</span><small>AMI attribution and media modifications</small></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="section-shell footer-grid">
+      <div><strong>Wan-Streamer Minimal</strong><p>A research prototype by Hengzi Liu.</p></div>
+      <div><span>Last updated</span><p>September 2026</p></div>
+      <div><span>Status</span><p>Validation-only · Holdout untouched</p></div>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
