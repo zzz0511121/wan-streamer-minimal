@@ -27,10 +27,3 @@ These are **preliminary, validation-only results**. No claim is made about full-
 ## License notes
 
 The AMI meeting corpus is used under the AMI license (CC BY 4.0); see `THIRD_PARTY_NOTICES.md` and the on-page attribution.
-
-## Development
-
-The site is static. To preview locally, serve this directory and open `http://localhost:8000`:
-
-```bash
-python3 -m http.server 8000
