@@ -17,8 +17,8 @@
   --tint: #f7f8fa;
   --link: #1a56b8;
   --code-bg: #f2f3f5;
-  --serif: Georgia, "Times New Roman", serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: Georgia, "Times New Roman", "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -197,7 +197,7 @@ table.seed-table th { background: var(--tint); font-size: 0.66rem; text-transfor
 table.seed-table tr.mean td { background: var(--tint); font-weight: 600; }
 .table-scroll { overflow-x: auto; }
 
-/* ---------- rollout ---------- */
+/* ---------- one-step example ---------- */
 .status-summary { border: 1px solid var(--line); border-left: 3px solid var(--faint); background: var(--tint); border-radius: 6px; padding: 14px 18px; font-size: 0.87rem; color: var(--muted); margin-bottom: 24px; }
 .status-summary p { margin: 0; }
 .status-summary strong { color: var(--ink); }
@@ -205,12 +205,24 @@ table.seed-table tr.mean td { background: var(--tint); font-weight: 600; }
 .demo-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 14px; }
 .demo-heading h3 { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; margin: 2px 0 0; }
 .demo-meta { font-size: 0.7rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
-.video-shell { background: #111; padding: 6px; border-radius: 6px; }
+.video-shell { background: #111; padding: 6px; border-radius: 6px; margin-top: 14px; }
 .video-shell video { width: 100%; border-radius: 3px; background: #000; }
+.keyframe-frame, .audio-frame { margin: 0; }
+.keyframe-frame img, .audio-frame img { width: 100%; height: auto; border-radius: 4px; display: block; }
+.keyframe-frame figcaption, .audio-frame figcaption { padding: 12px 6px 6px; font-size: 0.8rem; color: var(--muted); }
+.keyframe-frame figcaption strong, .audio-frame figcaption strong { display: block; color: var(--ink); font-size: 0.88rem; margin-bottom: 2px; }
+.audio-raw { margin-top: 16px; border-top: 1px dashed var(--line-soft); padding-top: 10px; }
+.audio-raw summary { cursor: pointer; color: var(--muted); font-size: 0.82rem; padding: 4px 2px; list-style: none; }
+.audio-raw summary::-webkit-details-marker { display: none; }
+.audio-raw summary::before { content: "+ "; color: var(--faint); font-weight: 600; }
+.audio-raw[open] summary::before { content: "− "; }
+.audio-raw summary:hover { color: var(--ink); }
+.audio-raw .audio-grid { margin-top: 10px; }
 .observation { display: grid; grid-template-columns: 130px 1fr; gap: 16px; padding: 14px 2px 0; }
 .observation span { font-size: 0.68rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .observation p { margin: 0; font-size: 0.84rem; color: var(--muted); }
 .audio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.audio-primary { margin-top: 16px; }
 .audio-item { padding: 12px 14px; display: grid; grid-template-columns: 1fr minmax(200px, 1.3fr); align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .audio-item > div { display: grid; grid-template-columns: 1fr auto; align-items: center; }
 .audio-item span { grid-column: 1 / -1; color: var(--faint); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -219,6 +231,7 @@ table.seed-table tr.mean td { background: var(--tint); font-weight: 600; }
 .audio-item audio { width: 100%; height: 34px; }
 .demo-footnote { font-size: 0.74rem; color: var(--faint); margin: 12px 2px 0; }
 .transcript-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.transcript-grid.single { grid-template-columns: 1fr; }
 .transcript-grid > div { padding: 14px 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--tint); }
 .transcript-mode { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 650; }
 .transcript-grid p { font-family: var(--serif); font-size: 0.95rem; line-height: 1.5; min-height: 96px; margin: 8px 0; }

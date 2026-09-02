@@ -1,29 +1,30 @@
-# Wan-Streamer Minimal
+# Wan-Streamer Minimal — S3 阶段进度快照
 
-A minimal implementation of the Wan-Streamer training mechanism: real multi-party meeting streams are aligned onto one 160 ms causal timeline, where a single shared representation learns to predict the next text, audio, and video states.
+Wan-Streamer 训练机制的最小实现：将真实的多方会议流对齐到一条 160 ms 因果时间线上，让同一个共享表示学习预测下一时刻的文本、音频与视频状态。
 
-**Live page:**&#8203; https://zzz0511121.github.io/wan-streamer-minimal/
+本目录是可以直接用于 GitHub Pages 的中文静态展示页，对应项目在 **2026 年 8 月 S3 阶段**的进度。
 
-## What this project is
+## 这个项目是什么
 
-This repository hosts the static project page for the Wan-Streamer minimal implementation. The page documents how real AMI meeting data was organized into a `world + event stream`, aligned to a 160 ms causal grid, and used to train a compact three-modal predictor (SmolLM2-360M text backbone + Mimi audio codes + Wan-VAE video latents + 128-D shared causal representation, ~5.7M trainable parameters).
+页面记录了如何将真实 AMI 会议数据组织为 `world + event stream`、对齐到 160 ms 因果时间格，并用于训练一个紧凑的三模态预测器（SmolLM2-360M 文本骨干 + Mimi 音频码 + Wan-VAE 视频潜变量 + 128 维共享因果表示，约 567 万可训练参数）。
 
-## What has been validated
+## 已验证到什么程度
 
-- A causal training contract holds across text, audio, and video: each prediction head beats its copy/shuffle baseline on the AMI-medium validation set (seeds 7, 17, 29).
-- Closed-loop behavior is reported honestly on a frozen model: text loops are numerically stable but repetitive; audio loops collapse (−21 dB vs. target RMS); video stays stable at 2.56 s and degrades by 5.12 s.
+- S2 文本上下文消融表明，正确因果上下文的验证 CE 为 2.93；移除或打乱上下文后分别为 4.89 和 6.31。
+- S3 统一模型在 AMI-medium 验证集（seeds 7、17、29）上，音频与视频单步预测均超过复制基线。
+- 页面提供 S3 seed 7 模型的单步视频、音频和文本示例。
 
-These are **preliminary, validation-only results**. No claim is made about full-scale generation quality, and the holdout set has not been touched. See the "Scope & next step" section of the page for the full evidence boundary.
+项目仍在进行中。本页集中展示目前已经完成的 S2/S3 训练、验证和单步示例。
 
-## Repository contents
+## 仓库内容
 
-| File | Purpose |
+| 文件 | 用途 |
 |---|---|
-| `index.html` | The project page (single page) |
-| `styles.css`, `script.js` | Styling and minimal interactions |
-| `assets/` | Media (video/audio diagnostics), figures, progress-report PDF |
-| `notices.html`, `THIRD_PARTY_NOTICES.md` | AMI corpus attribution (CC BY 4.0) |
+| `index.html` | 项目展示页（单页） |
+| `styles.css`、`script.js` | 样式与少量交互 |
+| `assets/` | S3 单步视频/音频、示意图和进度报告 PDF |
+| `notices.html`、`THIRD_PARTY_NOTICES.md` | AMI 语料署名（CC BY 4.0） |
 
-## License notes
+## 许可说明
 
-The AMI meeting corpus is used under the AMI license (CC BY 4.0); see `THIRD_PARTY_NOTICES.md` and the on-page attribution.
+AMI 会议语料依据 AMI 许可（CC BY 4.0）使用，详见 `THIRD_PARTY_NOTICES.md` 与页面内的署名。
