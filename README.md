@@ -1,4 +1,4 @@
-# Wan-Streamer Minimal — S3 阶段进度快照
+# Wan-Streamer Minimal — S3 阶段进度
 
 Wan-Streamer 训练机制的最小实现：将真实的多方会议流对齐到一条 160 ms 因果时间线上，让同一个共享表示学习预测下一时刻的文本、音频与视频状态。
 
